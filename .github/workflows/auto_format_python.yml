@@ -1,0 +1,79 @@
+name: auto_format_python
+
+on: [pull_request]
+
+jobs:
+  get_files:
+    runs-on: ubuntu-latest
+
+    outputs:
+      filenames: ${{ steps.changes.outputs.filenames }}
+
+    steps:
+    - name: checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # get added (A), copied (C), modified (M), renamed (R), type changed (T) python files from the pull request
+    - name: get files
+      id: changes
+      run: |
+        echo "::set-output name=filenames::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep .py$ | awk '{ printf "\"%s\" ", $0 }')"
+
+  auto_format:
+    runs-on: ubuntu-latest
+    needs: get_files
+    if: ${{ needs.get_files.outputs.filenames }}
+    strategy:
+      matrix:
+        python-version: ["3.7"]
+    steps:
+    - name: checkout repository
+      uses: actions/checkout@v2
+      with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
+
+    - name: set up python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install autoflake==1.4
+        pip install autopep8==1.6.0
+        pip install isort==5.10.1
+        pip install pylint==2.12.2
+
+    - name: list changed files
+      run: echo ${{ needs.get_files.outputs.filenames }}
+
+    - name: run pylint on changes (pre-auto-format)
+      run: |
+        pylint ${{ needs.get_files.outputs.filenames }} --exit-zero
+
+    - name: run isort (sort imports) on changes
+      run: |
+        isort --line-length=119 ${{ needs.get_files.outputs.filenames }}
+
+    - name: run autoflake (remove unused imports) on changes
+      run: |
+        autoflake --in-place --remove-all-unused-imports ${{ needs.get_files.outputs.filenames }}
+
+    - name: run autopep8 (partial automatic formatting) on changes
+      run: |
+        autopep8 --in-place --max-line-length=119 ${{ needs.get_files.outputs.filenames }}
+
+    - name: commit/push auto-formatting changes
+      run: |
+        git config --global user.name 'TungE'
+        git config --global user.email 'tunge@mssm.org'
+        echo `git commit -am "auto-formatting changes"`
+        echo `git push`
+
+    - name: run pylint on changes (post-auto-format)
+      run: |
+        pylint ${{ needs.get_files.outputs.filenames }} --exit-zero
