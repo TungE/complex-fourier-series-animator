@@ -1,4 +1,6 @@
 from collections import deque
+from dataclasses import dataclass
+from typing import Callable
 
 import scipy
 from scipy.integrate import quad
@@ -7,12 +9,15 @@ from utils.math_ import array, tau, to_complex_number, to_polar
 from utils.rotating_vector_2d import RotatingVector2D
 
 
+@dataclass
 class ComplexFourierSeriesAnimation:
-    def __init__(self, function, num_terms, path_maxlen):
-        self._function = function
-        self._num_terms = num_terms
-        self._path = deque(maxlen=path_maxlen)
+    _function: Callable[[float], float]
+    _num_terms: int
+    _path_maxlen: int
+
+    def __post_init__(self):
         self.init_vectors()
+        self._path = deque(maxlen=self._path_maxlen)
 
     @property
     def function(self):
@@ -21,6 +26,10 @@ class ComplexFourierSeriesAnimation:
     @property
     def num_terms(self):
         return self._num_terms
+
+    @property
+    def path_maxlen(self):
+        return self._path_maxlen
 
     @property
     def vectors(self):

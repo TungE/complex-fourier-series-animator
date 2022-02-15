@@ -1,11 +1,15 @@
+from dataclasses import dataclass
+
 from utils.math_ import tau, to_cartesian
 
 
+@dataclass
 class RotatingVector2D:
-    def __init__(self, frequency, magnitude, direction):
-        self._frequency = frequency
-        self._magnitude = magnitude
-        self._direction = direction
+    _frequency: float
+    _magnitude: float
+    _direction: float
+
+    def __post_init__(self):
         self.compute_vector()
 
     @property

@@ -78,8 +78,8 @@ def main():
 
         animation = ComplexFourierSeriesAnimation(
             function_to_be_animated,
-            num_terms=config.num_terms_in_series,
-            path_maxlen=animation_path_maxlen
+            config.num_terms_in_series,
+            animation_path_maxlen
         )
 
         timer = 0
